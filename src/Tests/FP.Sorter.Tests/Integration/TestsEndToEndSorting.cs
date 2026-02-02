@@ -160,12 +160,12 @@ public class TestsEndToEndSorting
             if (textComparison == 0)
             {
                 Assert.That(prev.Number, Is.LessThanOrEqualTo(curr.Number),
-                    $"Lines not sorted correctly at index {i}: {prev.OriginalLine} vs {curr.OriginalLine}");
+                    $"Lines not sorted correctly at index {i}: {prev.ToLineString()} vs {curr.ToLineString()}");
             }
             else
             {
                 Assert.That(textComparison, Is.LessThan(0),
-                    $"Lines not sorted correctly at index {i}: {prev.OriginalLine} vs {curr.OriginalLine}");
+                    $"Lines not sorted correctly at index {i}: {prev.ToLineString()} vs {curr.ToLineString()}");
             }
         }
     }

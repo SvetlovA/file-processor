@@ -88,7 +88,7 @@ public class TestsKWayMerger
             foreach (var line in chunkLines)
             {
                 _lineParser.TryParse(line, out var fl);
-                allLines.Add(((int)fl.Number, fl.Text, fl.OriginalLine));
+                allLines.Add(((int)fl.Number, fl.Text, fl.ToLineString()));
             }
         }
 

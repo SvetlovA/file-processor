@@ -1,3 +1,4 @@
+using FP.Common.Utilities;
 using FP.Sorter.Configuration;
 using FP.Sorter.Mergers;
 
@@ -27,7 +28,7 @@ public class ExternalMergeSorter(
             var fileInfo = new FileInfo(inputPath);
             var totalBytes = fileInfo.Length;
 
-            progress?.Report(new SortProgress(SortPhase.CreatingChunks, 0, $"Creating sorted chunks from {FormatBytes(totalBytes)} input..."));
+            progress?.Report(new SortProgress(SortPhase.CreatingChunks, 0, $"Creating sorted chunks from {SizeUtilities.FormatBytes(totalBytes)} input..."));
 
             var chunkProgress = new Progress<ChunkProgress>(p =>
             {
@@ -35,7 +36,7 @@ public class ExternalMergeSorter(
                 progress?.Report(new SortProgress(
                     SortPhase.CreatingChunks,
                     percent,
-                    $"Created {p.ChunksCreated} chunks, processed {FormatBytes(p.BytesProcessed)} / {FormatBytes(p.TotalBytes)}"));
+                    $"Created {p.ChunksCreated} chunks, processed {SizeUtilities.FormatBytes(p.BytesProcessed)} / {SizeUtilities.FormatBytes(p.TotalBytes)}"));
             });
 
             var chunkPaths = await chunkSorter.CreateSortedChunksAsync(
@@ -98,18 +99,4 @@ public class ExternalMergeSorter(
         }
     }
 
-    private static string FormatBytes(long bytes)
-    {
-        string[] suffixes = ["B", "KB", "MB", "GB", "TB"];
-        var index = 0;
-        double size = bytes;
-
-        while (size >= 1024 && index < suffixes.Length - 1)
-        {
-            size /= 1024;
-            index++;
-        }
-
-        return $"{size:F2} {suffixes[index]}";
-    }
 }

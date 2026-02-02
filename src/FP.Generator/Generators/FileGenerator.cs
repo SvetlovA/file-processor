@@ -21,11 +21,9 @@ public class FileGenerator(IRandomContentProvider contentProvider) : IFileGenera
             options.OutputPath,
             FileMode.Create,
             FileAccess.Write,
-            FileShare.None,
-            options.BufferSize,
-            FileOptions.Asynchronous | FileOptions.SequentialScan);
+            FileShare.None);
 
-        await using var writer = new StreamWriter(stream, Encoding.UTF8, options.BufferSize);
+        await using var writer = new StreamWriter(stream, Encoding.UTF8);
 
         while (bytesWritten < options.TargetSizeBytes)
         {

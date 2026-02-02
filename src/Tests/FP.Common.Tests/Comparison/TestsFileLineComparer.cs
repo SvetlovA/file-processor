@@ -18,8 +18,8 @@ public class TestsFileLineComparer
     [Test]
     public void TestsCompare_DifferentText_ReturnsTextComparison()
     {
-        var apple = new FileLine(1, "Apple", "1. Apple");
-        var banana = new FileLine(1, "Banana", "1. Banana");
+        var apple = new FileLine(1, "Apple");
+        var banana = new FileLine(1, "Banana");
 
         var result = _comparer.Compare(apple, banana);
 
@@ -29,8 +29,8 @@ public class TestsFileLineComparer
     [Test]
     public void TestsCompare_SameTextDifferentNumber_ReturnsNumberComparison()
     {
-        var apple1 = new FileLine(1, "Apple", "1. Apple");
-        var apple2 = new FileLine(2, "Apple", "2. Apple");
+        var apple1 = new FileLine(1, "Apple");
+        var apple2 = new FileLine(2, "Apple");
 
         var result = _comparer.Compare(apple1, apple2);
 
@@ -40,8 +40,8 @@ public class TestsFileLineComparer
     [Test]
     public void TestsCompare_SameTextSameNumber_ReturnsZero()
     {
-        var line1 = new FileLine(1, "Apple", "1. Apple");
-        var line2 = new FileLine(1, "Apple", "1. Apple");
+        var line1 = new FileLine(1, "Apple");
+        var line2 = new FileLine(1, "Apple");
 
         var result = _comparer.Compare(line1, line2);
 
@@ -53,11 +53,11 @@ public class TestsFileLineComparer
     {
         var lines = new List<FileLine>
         {
-            new(2, "Banana", "2. Banana"),
-            new(1, "Apple", "1. Apple"),
-            new(3, "Apple", "3. Apple"),
-            new(2, "Apple", "2. Apple"),
-            new(1, "Banana", "1. Banana"),
+            new(2, "Banana"),
+            new(1, "Apple"),
+            new(3, "Apple"),
+            new(2, "Apple"),
+            new(1, "Banana"),
         };
 
         lines.Sort(_comparer);
@@ -77,8 +77,8 @@ public class TestsFileLineComparer
     [Test]
     public void TestsCompare_CaseSensitive_UppercaseBeforeLowercase()
     {
-        var upper = new FileLine(1, "Apple", "1. Apple");
-        var lower = new FileLine(1, "apple", "1. apple");
+        var upper = new FileLine(1, "Apple");
+        var lower = new FileLine(1, "apple");
 
         var result = _comparer.Compare(upper, lower);
 
@@ -88,8 +88,8 @@ public class TestsFileLineComparer
     [Test]
     public void TestsCompare_EmptyText_ComparesCorrectly()
     {
-        var empty = new FileLine(1, "", "1. ");
-        var nonEmpty = new FileLine(1, "Apple", "1. Apple");
+        var empty = new FileLine(1, "");
+        var nonEmpty = new FileLine(1, "Apple");
 
         var result = _comparer.Compare(empty, nonEmpty);
 
@@ -99,8 +99,8 @@ public class TestsFileLineComparer
     [Test]
     public void TestsCompare_SpecialCharacters_ComparesCorrectly()
     {
-        var special = new FileLine(1, "!Special", "1. !Special");
-        var alpha = new FileLine(1, "Alpha", "1. Alpha");
+        var special = new FileLine(1, "!Special");
+        var alpha = new FileLine(1, "Alpha");
 
         var result = _comparer.Compare(special, alpha);
 
@@ -110,8 +110,8 @@ public class TestsFileLineComparer
     [Test]
     public void TestsCompare_LargeNumbers_ComparesCorrectly()
     {
-        var small = new FileLine(long.MinValue, "Test", $"{long.MinValue}. Test");
-        var large = new FileLine(long.MaxValue, "Test", $"{long.MaxValue}. Test");
+        var small = new FileLine(long.MinValue, "Test");
+        var large = new FileLine(long.MaxValue, "Test");
 
         var result = _comparer.Compare(small, large);
 
@@ -121,8 +121,8 @@ public class TestsFileLineComparer
     [Test]
     public void TestsCompare_ReversedComparison_ReturnsOppositeSign()
     {
-        var apple = new FileLine(1, "Apple", "1. Apple");
-        var banana = new FileLine(1, "Banana", "1. Banana");
+        var apple = new FileLine(1, "Apple");
+        var banana = new FileLine(1, "Banana");
 
         var result1 = _comparer.Compare(apple, banana);
         var result2 = _comparer.Compare(banana, apple);
@@ -135,10 +135,10 @@ public class TestsFileLineComparer
     {
         var queue = new PriorityQueue<FileLine, FileLine>(_comparer);
 
-        queue.Enqueue(new FileLine(2, "Banana", "2. Banana"), new FileLine(2, "Banana", "2. Banana"));
-        queue.Enqueue(new FileLine(1, "Apple", "1. Apple"), new FileLine(1, "Apple", "1. Apple"));
-        queue.Enqueue(new FileLine(3, "Apple", "3. Apple"), new FileLine(3, "Apple", "3. Apple"));
-        queue.Enqueue(new FileLine(2, "Apple", "2. Apple"), new FileLine(2, "Apple", "2. Apple"));
+        queue.Enqueue(new FileLine(2, "Banana"), new FileLine(2, "Banana"));
+        queue.Enqueue(new FileLine(1, "Apple"), new FileLine(1, "Apple"));
+        queue.Enqueue(new FileLine(3, "Apple"), new FileLine(3, "Apple"));
+        queue.Enqueue(new FileLine(2, "Apple"), new FileLine(2, "Apple"));
 
         var dequeued = new List<FileLine>();
         while (queue.Count > 0)

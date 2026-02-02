@@ -32,7 +32,7 @@ public class LineParser : ILineParser
         }
 
         var text = line.Substring(dotIndex + Separator.Length);
-        result = new FileLine(number, text, line);
+        result = new FileLine(number, text);
         return true;
     }
 

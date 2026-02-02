@@ -5,27 +5,14 @@ using FP.Common.Models;
 
 namespace FP.Sorter.Mergers;
 
-public class KWayMerger : IChunkMerger
+public class KWayMerger(
+    int mergeWayCount,
+    ILineParser lineParser,
+    IComparer<FileLine>? comparer = null,
+    bool deleteTempFiles = true)
+    : IChunkMerger
 {
-    private readonly int _mergeWayCount;
-    private readonly ILineParser _lineParser;
-    private readonly IComparer<FileLine> _comparer;
-    private readonly int _bufferSize;
-    private readonly bool _deleteTempFiles;
-
-    public KWayMerger(
-        int mergeWayCount,
-        ILineParser lineParser,
-        IComparer<FileLine>? comparer = null,
-        int bufferSize = 64 * 1024,
-        bool deleteTempFiles = true)
-    {
-        _mergeWayCount = mergeWayCount;
-        _lineParser = lineParser;
-        _comparer = comparer ?? FileLineComparer.Instance;
-        _bufferSize = bufferSize;
-        _deleteTempFiles = deleteTempFiles;
-    }
+    private readonly IComparer<FileLine> _comparer = comparer ?? FileLineComparer.Instance;
 
     public async Task<string> MergeChunksAsync(
         IReadOnlyList<string> chunkPaths,
@@ -48,7 +35,7 @@ public class KWayMerger : IChunkMerger
 
         var currentChunks = chunkPaths.ToList();
         var pass = 1;
-        var totalPasses = (int)Math.Ceiling(Math.Log(chunkPaths.Count, _mergeWayCount));
+        var totalPasses = (int)Math.Ceiling(Math.Log(chunkPaths.Count, mergeWayCount));
         long totalLinesProcessed = 0;
 
         while (currentChunks.Count > 1)
@@ -58,14 +45,14 @@ public class KWayMerger : IChunkMerger
             var newChunks = new List<string>();
             var mergeIndex = 0;
 
-            for (var i = 0; i < currentChunks.Count; i += _mergeWayCount)
+            for (var i = 0; i < currentChunks.Count; i += mergeWayCount)
             {
                 var chunksToMerge = currentChunks
                     .Skip(i)
-                    .Take(_mergeWayCount)
+                    .Take(mergeWayCount)
                     .ToList();
 
-                var isFinalMerge = currentChunks.Count <= _mergeWayCount;
+                var isFinalMerge = currentChunks.Count <= mergeWayCount;
                 var mergedPath = isFinalMerge
                     ? outputPath
                     : Path.Combine(tempDirectory, $"merged_pass{pass}_{mergeIndex:D6}.tmp");
@@ -75,7 +62,7 @@ public class KWayMerger : IChunkMerger
 
                 newChunks.Add(mergedPath);
 
-                if (_deleteTempFiles)
+                if (deleteTempFiles)
                 {
                     foreach (var chunk in chunksToMerge)
                     {
@@ -116,10 +103,9 @@ public class KWayMerger : IChunkMerger
             for (var i = 0; i < inputPaths.Count; i++)
             {
                 readers[i] = new StreamReader(
-                    new FileStream(inputPaths[i], FileMode.Open, FileAccess.Read, FileShare.Read, _bufferSize, FileOptions.SequentialScan),
+                    new FileStream(inputPaths[i], FileMode.Open, FileAccess.Read, FileShare.Read),
                     Encoding.UTF8,
-                    detectEncodingFromByteOrderMarks: true,
-                    _bufferSize);
+                    detectEncodingFromByteOrderMarks: true);
 
                 if (await TryReadNextAsync(readers[i], cancellationToken) is { } fileLine)
                 {
@@ -131,18 +117,16 @@ public class KWayMerger : IChunkMerger
                 outputPath,
                 FileMode.Create,
                 FileAccess.Write,
-                FileShare.None,
-                _bufferSize,
-                FileOptions.Asynchronous | FileOptions.SequentialScan);
+                FileShare.None);
 
-            await using var writer = new StreamWriter(outputStream, Encoding.UTF8, _bufferSize);
+            await using var writer = new StreamWriter(outputStream, Encoding.UTF8);
 
             while (priorityQueue.Count > 0)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var (line, readerIndex) = priorityQueue.Dequeue();
-                await writer.WriteLineAsync(line.OriginalLine);
+                await writer.WriteLineAsync(line.ToLineString());
                 linesProcessed++;
 
                 if (await TryReadNextAsync(readers[readerIndex], cancellationToken) is { } nextLine)
@@ -166,7 +150,7 @@ public class KWayMerger : IChunkMerger
     {
         while (await reader.ReadLineAsync(cancellationToken) is { } line)
         {
-            if (_lineParser.TryParse(line, out var fileLine))
+            if (lineParser.TryParse(line, out var fileLine))
             {
                 return fileLine;
             }

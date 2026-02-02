@@ -8,11 +8,11 @@ namespace FP.Sorter.Sorters;
 public class ChunkSorter(
     ILineParser lineParser,
     IComparer<FileLine>? comparer = null,
-    long chunkSizeBytes = 512 * 1024 * 1024,
-    int bufferSize = 64 * 1024)
+    long chunkSizeBytes = 512 * 1024 * 1024)
     : IChunkSorter
 {
     private readonly IComparer<FileLine> _comparer = comparer ?? FileLineComparer.Instance;
+    private readonly HashSet<string> _stringPool = new();
 
     public async Task<IReadOnlyList<string>> CreateSortedChunksAsync(
         string inputPath,
@@ -31,11 +31,9 @@ public class ChunkSorter(
             inputPath,
             FileMode.Open,
             FileAccess.Read,
-            FileShare.Read,
-            bufferSize,
-            FileOptions.SequentialScan | FileOptions.Asynchronous);
+            FileShare.Read);
 
-        using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize);
+        using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
 
         var currentChunk = new List<FileLine>();
         long currentChunkSize = 0;
@@ -50,8 +48,9 @@ public class ChunkSorter(
 
             if (lineParser.TryParse(line, out var fileLine))
             {
-                currentChunk.Add(fileLine);
-                currentChunkSize += lineSize + EstimateObjectOverhead(fileLine);
+                var pooledLine = new FileLine(fileLine.Number, PoolString(fileLine.Text));
+                currentChunk.Add(pooledLine);
+                currentChunkSize += pooledLine.GetUtf8ByteCount() + ObjectOverhead;
             }
 
             if (currentChunkSize >= chunkSizeBytes)
@@ -65,7 +64,8 @@ public class ChunkSorter(
                 chunkPaths.Add(chunkPath);
                 currentChunk.Clear();
                 currentChunkSize = 0;
-                
+                _stringPool.Clear();
+
                 progress?.Report(new ChunkProgress(chunkPaths.Count, bytesProcessed, totalBytes));
             }
         }
@@ -79,6 +79,7 @@ public class ChunkSorter(
                 cancellationToken);
 
             chunkPaths.Add(chunkPath);
+            _stringPool.Clear();
             progress?.Report(new ChunkProgress(chunkPaths.Count, bytesProcessed, totalBytes));
         }
 
@@ -99,23 +100,27 @@ public class ChunkSorter(
             chunkPath,
             FileMode.Create,
             FileAccess.Write,
-            FileShare.None,
-            bufferSize,
-            FileOptions.Asynchronous | FileOptions.SequentialScan);
+            FileShare.None);
 
-        await using var writer = new StreamWriter(stream, Encoding.UTF8, bufferSize);
+        await using var writer = new StreamWriter(stream, Encoding.UTF8);
 
         foreach (var line in chunk)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            await writer.WriteLineAsync(line.OriginalLine);
+            await writer.WriteLineAsync(line.ToLineString());
         }
 
         return chunkPath;
     }
 
-    private static long EstimateObjectOverhead(FileLine fileLine)
+    private string PoolString(string value)
     {
-        return 32 + fileLine.Text.Length * 2 + fileLine.OriginalLine.Length * 2;
+        if (_stringPool.TryGetValue(value, out var pooled))
+            return pooled;
+        _stringPool.Add(value);
+        return value;
     }
+
+    // Fixed overhead per FileLine struct: 8 bytes (long) + 8 bytes (string ref) + padding
+    private const int ObjectOverhead = 24;
 }

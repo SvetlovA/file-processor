@@ -26,7 +26,7 @@ public class TestsLineParser
         {
             Assert.That(result.Number, Is.EqualTo(415));
             Assert.That(result.Text, Is.EqualTo("Apple"));
-            Assert.That(result.OriginalLine, Is.EqualTo(line));
+            Assert.That(result.ToLineString(), Is.EqualTo(line));
         });
     }
 

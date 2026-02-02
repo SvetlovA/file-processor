@@ -1,5 +1,6 @@
 using FP.Common.Comparison;
 using FP.Common.Parsing;
+using FP.Common.Utilities;
 using FP.Sorter.CommandLine;
 using FP.Sorter.Configuration;
 using FP.Sorter.Mergers;
@@ -19,14 +20,14 @@ public static class Program
     {
         Console.WriteLine($"Input file: {options.InputPath}");
         Console.WriteLine($"Output file: {options.OutputPath}");
-        Console.WriteLine($"Max memory: {FormatBytes(options.MaxMemoryBytes)}");
+        Console.WriteLine($"Max memory: {SizeUtilities.FormatBytes(options.MaxMemoryBytes)}");
         Console.WriteLine($"Merge way count: {options.MergeWayCount}");
         Console.WriteLine();
 
         var lineParser = new LineParser();
         var comparer = FileLineComparer.Instance;
-        var chunkSorter = new ChunkSorter(lineParser, comparer, options.MaxMemoryBytes, options.BufferSize);
-        var chunkMerger = new KWayMerger(options.MergeWayCount, lineParser, comparer, options.BufferSize, options.DeleteTempFiles);
+        var chunkSorter = new ChunkSorter(lineParser, comparer, options.MaxMemoryBytes);
+        var chunkMerger = new KWayMerger(options.MergeWayCount, lineParser, comparer, options.DeleteTempFiles);
         var sorter = new ExternalMergeSorter(options, chunkSorter, chunkMerger);
 
         var progress = new Progress<SortProgress>(p =>
@@ -55,18 +56,4 @@ public static class Program
         }
     }
 
-    private static string FormatBytes(long bytes)
-    {
-        string[] suffixes = ["B", "KB", "MB", "GB", "TB"];
-        var index = 0;
-        double size = bytes;
-
-        while (size >= 1024 && index < suffixes.Length - 1)
-        {
-            size /= 1024;
-            index++;
-        }
-
-        return $"{size:F2} {suffixes[index]}";
-    }
 }

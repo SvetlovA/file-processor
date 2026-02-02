@@ -1,3 +1,4 @@
+using FP.Common.Utilities;
 using FP.Generator.CommandLine;
 using FP.Generator.Configuration;
 using FP.Generator.Generators;
@@ -16,7 +17,7 @@ public static class Program
     private static async Task<int> RunGeneratorAsync(GeneratorOptions options, CancellationToken cancellationToken)
     {
         Console.WriteLine($"Generating file: {options.OutputPath}");
-        Console.WriteLine($"Target size: {FormatBytes(options.TargetSizeBytes)}");
+        Console.WriteLine($"Target size: {SizeUtilities.FormatBytes(options.TargetSizeBytes)}");
         Console.WriteLine($"Duplicate percentage: {options.DuplicatePercentage}%");
         if (options.Seed.HasValue)
         {
@@ -29,7 +30,7 @@ public static class Program
 
         var progress = new Progress<GenerationProgress>(p =>
         {
-            Console.Write($"\rProgress: {p.PercentComplete}% ({FormatBytes(p.BytesWritten)} / {FormatBytes(p.TotalBytes)})");
+            Console.Write($"\rProgress: {p.PercentComplete}% ({SizeUtilities.FormatBytes(p.BytesWritten)} / {SizeUtilities.FormatBytes(p.TotalBytes)})");
         });
 
         try
@@ -50,18 +51,4 @@ public static class Program
         }
     }
 
-    private static string FormatBytes(long bytes)
-    {
-        string[] suffixes = ["B", "KB", "MB", "GB", "TB"];
-        var index = 0;
-        double size = bytes;
-
-        while (size >= 1024 && index < suffixes.Length - 1)
-        {
-            size /= 1024;
-            index++;
-        }
-
-        return $"{size:F2} {suffixes[index]}";
-    }
 }
